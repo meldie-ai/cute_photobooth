@@ -4,16 +4,12 @@
  */
 
 // ============ Constants & Variables ============
-// Frame asset filenames (without .png)
-const FRAME_FILES = { flower: 'flower-frame', star: 'star-sparkles', heart: 'heart-corners' };
-
 const video = document.getElementById('video');
 const canvas = document.createElement('canvas');
 const context = canvas.getContext('2d');
 
 let capturedImageDataUrl = null;
 let currentFrame = null;
-let currentFrameImage = null;
 
 // DOM elements
 const captureBtn = document.getElementById('capture-btn');
@@ -74,9 +70,9 @@ function takePhoto() {
   // Draw current video frame
   context.drawImage(video, 0, 0);
 
-  // If a frame is selected, draw it on top (same size as canvas)
-  if (currentFrame && currentFrameImage && currentFrameImage.complete && currentFrameImage.naturalWidth) {
-    context.drawImage(currentFrameImage, 0, 0, canvas.width, canvas.height);
+  // If a frame (sticker theme) is selected, draw simple stickers on top
+  if (currentFrame) {
+    drawStickers(currentFrame, canvas.width, canvas.height);
   }
 
   // Convert to data URL and display
@@ -135,7 +131,6 @@ function downloadPhoto() {
 function setFrame(frameName) {
   const sameFrame = currentFrame === frameName;
   currentFrame = sameFrame ? null : frameName;
-  currentFrameImage = null;
 
   // Update active state on buttons
   frameButtons.forEach((btn) => {
@@ -143,21 +138,63 @@ function setFrame(frameName) {
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', isActive);
   });
-
-  if (currentFrame) {
-    currentFrameImage = loadFrameImage(currentFrame);
-  }
 }
 
-/**
- * Create and return an Image loaded from assets/frames/{frameName}.png
- */
-function loadFrameImage(frameName) {
-  const img = new Image();
-  const filename = FRAME_FILES[frameName] || `${frameName}-frame`;
-  img.src = `assets/frames/${filename}.png`;
-  img.alt = `${frameName} frame overlay`;
-  return img;
+// Draw simple emoji-like stickers (flowers / stars / hearts) on the photo
+function drawStickers(frameName, width, height) {
+  context.save();
+
+  // Common style for all stickers
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+
+  let emoji = '✨';
+  let color = '#ffffff';
+
+  if (frameName === 'flower') {
+    emoji = '🌸';
+    color = 'rgba(255, 255, 255, 0.7)';
+  } else if (frameName === 'star') {
+    emoji = '⭐';
+    color = 'rgba(255, 255, 200, 0.7)';
+  } else if (frameName === 'heart') {
+    emoji = '💖';
+    color = 'rgba(255, 240, 245, 0.8)';
+  }
+
+  // Soft glow circles under stickers
+  function drawGlow(x, y, radius) {
+    const g = context.createRadialGradient(x, y, 0, x, y, radius);
+    g.addColorStop(0, color);
+    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    context.fillStyle = g;
+    context.beginPath();
+    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.fill();
+  }
+
+  const pad = width * 0.08;
+  const radius = Math.min(width, height) * 0.12;
+  const positions = [
+    [pad, pad], // top-left
+    [width - pad, pad], // top-right
+    [pad, height - pad], // bottom-left
+    [width - pad, height - pad], // bottom-right
+  ];
+
+  positions.forEach(([x, y]) => {
+    drawGlow(x, y, radius);
+  });
+
+  // Draw the emojis on top of glows
+  const fontSize = Math.min(width, height) * 0.12;
+  context.font = `${fontSize}px system-ui, Apple Color Emoji, Segoe UI Emoji, sans-serif`;
+
+  positions.forEach(([x, y]) => {
+    context.fillText(emoji, x, y);
+  });
+
+  context.restore();
 }
 
 // ============ Sound ============
