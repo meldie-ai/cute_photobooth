@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌸 Cute Photo Booth 🌸</title>
+  <!-- Google Font: Quicksand -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Floating hearts background (decorative) -->
+  <div class="hearts-bg" aria-hidden="true">
+    <span class="heart">💖</span>
+    <span class="heart">🌸</span>
+    <span class="heart">✨</span>
+    <span class="heart">💕</span>
+    <span class="heart">🌷</span>
+  </div>
+
+  <main class="container">
+    <header>
+      <h1>🌸 Cute Photo Booth 🌸</h1>
+      <p class="tagline">Snap a selfie with a frame!</p>
+    </header>
+
+    <section class="camera-section" aria-labelledby="live-feed-heading">
+      <h2 id="live-feed-heading" class="sr-only">Live camera feed</h2>
+
+      <!-- Video feed wrapper (rounded card) -->
+      <div class="video-wrapper">
+        <!-- Loading state while camera initializes -->
+        <div id="camera-loading" class="loading-overlay" role="status" aria-live="polite">
+          <div class="spinner"></div>
+          <p>Starting your camera... say cheese! 📸</p>
+        </div>
+        <!-- Error state if camera fails -->
+        <div id="camera-error" class="error-overlay hidden" role="alert">
+          <p>😢 Couldn't start the camera.</p>
+          <p>Please allow camera access and refresh the page.</p>
+        </div>
+        <video id="video" autoplay playsinline muted aria-label="Live camera preview"></video>
+        <!-- Frame overlay drawn by canvas in JS; visual frame placeholder -->
+        <canvas id="frame-canvas" class="frame-overlay" aria-hidden="true"></canvas>
+      </div>
+
+      <!-- Frame toggles -->
+      <div class="frame-toggles" role="group" aria-label="Choose photo frame">
+        <button type="button" class="frame-btn" data-frame="flower" aria-pressed="false" aria-label="Flower frame">
+          🌸 Flower
+        </button>
+        <button type="button" class="frame-btn" data-frame="star" aria-pressed="false" aria-label="Star sparkles frame">
+          ⭐ Stars
+        </button>
+        <button type="button" class="frame-btn" data-frame="heart" aria-pressed="false" aria-label="Heart corners frame">
+          💖 Hearts
+        </button>
+      </div>
+
+      <!-- Capture & Download -->
+      <div class="actions">
+        <button type="button" id="capture-btn" class="btn btn-capture" aria-label="Take photo">
+          📸 Capture
+        </button>
+        <button type="button" id="download-btn" class="btn btn-download" aria-label="Download photo" disabled>
+          💾 Download
+        </button>
+      </div>
+
+      <!-- "Cheese!" popup (shown on capture) -->
+      <div id="cheese-popup" class="cheese-popup hidden" aria-live="polite">Cheese! 🧀</div>
+    </section>
+
+    <!-- Captured photo display (polaroid style) -->
+    <section class="captured-section" aria-labelledby="captured-heading">
+      <h2 id="captured-heading">Your photo</h2>
+      <div class="polaroid-wrapper">
+        <div id="captured-container" class="captured-container">
+          <p id="no-photo-yet" class="no-photo">Take a photo above to see it here! ✨</p>
+          <img id="captured-image" class="captured-image hidden" alt="Your captured photo" />
+        </div>
+      </div>
+    </section>
+
+    <footer class="instructions">
+      <p>📌 Allow camera access → pick a frame (optional) → tap Capture → Download to save.</p>
+    </footer>
+  </main>
+
+  <script src="js/script.js"></script>
+</body>
+</html>
