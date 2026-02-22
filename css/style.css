@@ -126,6 +126,7 @@ header h1 {
   aspect-ratio: 4 / 3;
   object-fit: cover;
   border-radius: var(--radius-video);
+  transform: scaleX(-1); /* mirror like a selfie */
 }
 
 .frame-overlay {

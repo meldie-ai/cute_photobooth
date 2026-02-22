@@ -64,15 +64,21 @@ function takePhoto() {
   if (!video.srcObject || video.readyState < 2) return;
 
   // Set canvas to video dimensions
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  const w = video.videoWidth;
+  const h = video.videoHeight;
+  canvas.width = w;
+  canvas.height = h;
 
-  // Draw current video frame
-  context.drawImage(video, 0, 0);
+  // Draw current video frame mirrored (like a selfie mirror)
+  context.save();
+  context.translate(w, 0);
+  context.scale(-1, 1);
+  context.drawImage(video, 0, 0, w, h);
+  context.restore();
 
   // If a frame (sticker theme) is selected, draw simple stickers on top
   if (currentFrame) {
-    drawStickers(currentFrame, canvas.width, canvas.height);
+    drawStickers(currentFrame, w, h);
   }
 
   // Convert to data URL and display
@@ -140,61 +146,85 @@ function setFrame(frameName) {
   });
 }
 
-// Draw simple emoji-like stickers (flowers / stars / hearts) on the photo
+// Draw simple shape stickers (flowers / stars / hearts) on the photo — no emoji, so they render on canvas
 function drawStickers(frameName, width, height) {
   context.save();
 
-  // Common style for all stickers
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-
-  let emoji = '✨';
-  let color = '#ffffff';
-
-  if (frameName === 'flower') {
-    emoji = '🌸';
-    color = 'rgba(255, 255, 255, 0.7)';
-  } else if (frameName === 'star') {
-    emoji = '⭐';
-    color = 'rgba(255, 255, 200, 0.7)';
-  } else if (frameName === 'heart') {
-    emoji = '💖';
-    color = 'rgba(255, 240, 245, 0.8)';
-  }
-
-  // Soft glow circles under stickers
-  function drawGlow(x, y, radius) {
-    const g = context.createRadialGradient(x, y, 0, x, y, radius);
-    g.addColorStop(0, color);
-    g.addColorStop(1, 'rgba(255, 255, 255, 0)');
-    context.fillStyle = g;
-    context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
-    context.fill();
-  }
-
   const pad = width * 0.08;
-  const radius = Math.min(width, height) * 0.12;
+  const size = Math.min(width, height) * 0.14;
   const positions = [
-    [pad, pad], // top-left
-    [width - pad, pad], // top-right
-    [pad, height - pad], // bottom-left
-    [width - pad, height - pad], // bottom-right
+    [pad + size, pad + size],
+    [width - pad - size, pad + size],
+    [pad + size, height - pad - size],
+    [width - pad - size, height - pad - size],
   ];
 
   positions.forEach(([x, y]) => {
-    drawGlow(x, y, radius);
-  });
-
-  // Draw the emojis on top of glows
-  const fontSize = Math.min(width, height) * 0.12;
-  context.font = `${fontSize}px system-ui, Apple Color Emoji, Segoe UI Emoji, sans-serif`;
-
-  positions.forEach(([x, y]) => {
-    context.fillText(emoji, x, y);
+    if (frameName === 'flower') drawFlower(x, y, size);
+    else if (frameName === 'star') drawStar(x, y, size);
+    else if (frameName === 'heart') drawHeart(x, y, size);
   });
 
   context.restore();
+}
+
+function drawFlower(x, y, size) {
+  const r = size * 0.5;
+  const petalR = size * 0.35;
+  context.fillStyle = 'rgba(255, 182, 193, 0.95)';
+  context.strokeStyle = 'rgba(255, 105, 180, 0.6)';
+  context.lineWidth = 1;
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
+    const px = x + Math.cos(a) * r * 0.7;
+    const py = y + Math.sin(a) * r * 0.7;
+    context.beginPath();
+    context.arc(px, py, petalR, 0, Math.PI * 2);
+    context.fill();
+    context.stroke();
+  }
+  context.fillStyle = 'rgba(255, 255, 200, 0.95)';
+  context.beginPath();
+  context.arc(x, y, petalR * 0.6, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+}
+
+function drawStar(x, y, size) {
+  const outer = size;
+  const inner = size * 0.45;
+  const points = 5;
+  context.fillStyle = 'rgba(255, 215, 0, 0.9)';
+  context.strokeStyle = 'rgba(255, 165, 0, 0.7)';
+  context.lineWidth = 1;
+  context.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const radius = i % 2 === 0 ? outer : inner;
+    const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
+    const px = x + Math.cos(a) * radius;
+    const py = y + Math.sin(a) * radius;
+    if (i === 0) context.moveTo(px, py);
+    else context.lineTo(px, py);
+  }
+  context.closePath();
+  context.fill();
+  context.stroke();
+}
+
+function drawHeart(x, y, size) {
+  const s = size * 0.9;
+  context.fillStyle = 'rgba(255, 105, 180, 0.9)';
+  context.strokeStyle = 'rgba(219, 112, 147, 0.8)';
+  context.lineWidth = 1;
+  context.beginPath();
+  context.moveTo(x, y + s * 0.3);
+  context.bezierCurveTo(x, y - s * 0.4, x - s, y - s * 0.4, x - s * 0.5, y + s * 0.2);
+  context.bezierCurveTo(x, y + s * 0.6, x, y + s * 0.6, x, y + s);
+  context.bezierCurveTo(x, y + s * 0.6, x, y + s * 0.6, x + s * 0.5, y + s * 0.2);
+  context.bezierCurveTo(x + s, y - s * 0.4, x, y - s * 0.4, x, y + s * 0.3);
+  context.closePath();
+  context.fill();
+  context.stroke();
 }
 
 // ============ Sound ============
