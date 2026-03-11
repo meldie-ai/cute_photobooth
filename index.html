@@ -60,6 +60,29 @@
         <button type="button" class="frame-btn" data-frame="heart" aria-pressed="false" aria-label="Heart corners frame">
           💖 Hearts
         </button>
+        <button type="button" class="frame-btn frame-btn-none" data-frame="none" aria-pressed="true" aria-label="No frame selected">
+          ✨ No frame
+        </button>
+      </div>
+
+      <!-- Filter toggles -->
+      <div class="filter-group" role="group" aria-label="Choose photo filter">
+        <button type="button" class="filter-btn active" data-filter="none" aria-pressed="true">
+          <span class="filter-swatch filter-swatch-none"></span>
+          <span class="filter-label">Normal</span>
+        </button>
+        <button type="button" class="filter-btn" data-filter="bw" aria-pressed="false">
+          <span class="filter-swatch filter-swatch-bw"></span>
+          <span class="filter-label">B&amp;W</span>
+        </button>
+        <button type="button" class="filter-btn" data-filter="warm" aria-pressed="false">
+          <span class="filter-swatch filter-swatch-warm"></span>
+          <span class="filter-label">Warm</span>
+        </button>
+        <button type="button" class="filter-btn" data-filter="cool" aria-pressed="false">
+          <span class="filter-swatch filter-swatch-cool"></span>
+          <span class="filter-label">Cool</span>
+        </button>
       </div>
 
       <!-- Capture & Download -->

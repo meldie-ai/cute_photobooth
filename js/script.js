@@ -12,6 +12,14 @@ let capturedImageDataUrl = null;
 let currentFrame = null;
 let isCountingDown = false;
 let countdownTimerId = null;
+let currentFilter = 'none';
+
+const FILTER_STYLES = {
+  none: 'none',
+  bw: 'grayscale(1)',
+  warm: 'sepia(0.3) saturate(1.4)',
+  cool: 'hue-rotate(180deg) saturate(1.2)',
+};
 
 // DOM elements
 const captureBtn = document.getElementById('capture-btn');
@@ -22,6 +30,7 @@ const cameraLoading = document.getElementById('camera-loading');
 const cameraError = document.getElementById('camera-error');
 const cheesePopup = document.getElementById('cheese-popup');
 const frameButtons = document.querySelectorAll('.frame-btn');
+const filterButtons = document.querySelectorAll('.filter-btn');
 const countdownEl = document.getElementById('countdown');
 const flashOverlay = document.getElementById('flash-overlay');
 
@@ -104,8 +113,9 @@ function performCapture() {
   canvas.width = w;
   canvas.height = h;
 
-  // Draw current video frame mirrored (like a selfie mirror)
+  // Draw current video frame mirrored (like a selfie mirror), with filter applied
   context.save();
+  context.filter = FILTER_STYLES[currentFilter] || 'none';
   context.translate(w, 0);
   context.scale(-1, 1);
   context.drawImage(video, 0, 0, w, h);
@@ -178,15 +188,40 @@ function downloadPhoto() {
  * Toggle off if the same frame is clicked again.
  */
 function setFrame(frameName) {
-  const sameFrame = currentFrame === frameName;
-  currentFrame = sameFrame ? null : frameName;
+  if (frameName === 'none') {
+    currentFrame = null;
+  } else {
+    const sameFrame = currentFrame === frameName;
+    currentFrame = sameFrame ? null : frameName;
+  }
 
   // Update active state on buttons
   frameButtons.forEach((btn) => {
-    const isActive = btn.dataset.frame === currentFrame;
+    const btnFrame = btn.dataset.frame;
+    const isActive =
+      (currentFrame && btnFrame === currentFrame) ||
+      (!currentFrame && btnFrame === 'none');
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', isActive);
   });
+}
+
+// ============ Filters ============
+
+function setFilter(filterName) {
+  currentFilter = filterName;
+
+  // Update active state
+  filterButtons.forEach((btn) => {
+    const isActive = btn.dataset.filter === currentFilter;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive);
+  });
+
+  // Live preview on video element
+  if (video) {
+    video.style.filter = FILTER_STYLES[currentFilter] || 'none';
+  }
 }
 
 // Draw simple shape stickers (flowers / stars / hearts) on the photo — no emoji, so they render on canvas
@@ -301,6 +336,13 @@ frameButtons.forEach((btn) => {
   btn.addEventListener('click', () => {
     const frame = btn.dataset.frame;
     if (frame) setFrame(frame);
+  });
+});
+
+filterButtons.forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const filter = btn.dataset.filter;
+    if (filter) setFilter(filter);
   });
 });
 
