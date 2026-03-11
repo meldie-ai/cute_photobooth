@@ -178,6 +178,30 @@ header h1 {
   to { transform: rotate(360deg); }
 }
 
+/* Countdown overlay (3-2-1 before capture) */
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(3rem, 10vw, 4.5rem);
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* Quick white flash on capture */
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: white;
+  opacity: 0.95;
+  z-index: 4;
+}
+
 /* Frame toggle buttons - soft yellow */
 .frame-toggles {
   display: flex;

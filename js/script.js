@@ -10,6 +10,8 @@ const context = canvas.getContext('2d');
 
 let capturedImageDataUrl = null;
 let currentFrame = null;
+let isCountingDown = false;
+let countdownTimerId = null;
 
 // DOM elements
 const captureBtn = document.getElementById('capture-btn');
@@ -20,6 +22,8 @@ const cameraLoading = document.getElementById('camera-loading');
 const cameraError = document.getElementById('camera-error');
 const cheesePopup = document.getElementById('cheese-popup');
 const frameButtons = document.querySelectorAll('.frame-btn');
+const countdownEl = document.getElementById('countdown');
+const flashOverlay = document.getElementById('flash-overlay');
 
 // ============ Camera ============
 
@@ -57,10 +61,41 @@ function showError() {
 // ============ Capture ============
 
 /**
+ * Start a short countdown, then capture the photo.
+ */
+function takePhoto() {
+  if (!video.srcObject || video.readyState < 2 || isCountingDown) return;
+
+  isCountingDown = true;
+  let value = 3;
+
+  if (countdownEl) {
+    countdownEl.textContent = String(value);
+    countdownEl.classList.remove('hidden');
+  }
+
+  countdownTimerId = window.setInterval(() => {
+    value -= 1;
+
+    if (value <= 0) {
+      window.clearInterval(countdownTimerId);
+      countdownTimerId = null;
+      if (countdownEl) countdownEl.classList.add('hidden');
+      isCountingDown = false;
+
+      flashScreen();
+      performCapture();
+    } else if (countdownEl) {
+      countdownEl.textContent = String(value);
+    }
+  }, 1000);
+}
+
+/**
  * Take a photo from the video feed, optionally with frame overlay.
  * Shows "Cheese!" popup, plays sound, enables download.
  */
-function takePhoto() {
+function performCapture() {
   if (!video.srcObject || video.readyState < 2) return;
 
   // Set canvas to video dimensions
@@ -93,6 +128,14 @@ function takePhoto() {
   playSound();
   showCheesePopup();
   animateCaptureButton();
+}
+
+function flashScreen() {
+  if (!flashOverlay) return;
+  flashOverlay.classList.remove('hidden');
+  window.setTimeout(() => {
+    flashOverlay.classList.add('hidden');
+  }, 120);
 }
 
 function showCheesePopup() {

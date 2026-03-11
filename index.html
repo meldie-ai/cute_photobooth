@@ -44,6 +44,9 @@
         <video id="video" autoplay playsinline muted aria-label="Live camera preview"></video>
         <!-- Frame overlay drawn by canvas in JS; visual frame placeholder -->
         <canvas id="frame-canvas" class="frame-overlay" aria-hidden="true"></canvas>
+        <!-- Countdown and flash overlays -->
+        <div id="countdown" class="countdown-overlay hidden" aria-live="assertive"></div>
+        <div id="flash-overlay" class="flash-overlay hidden" aria-hidden="true"></div>
       </div>
 
       <!-- Frame toggles -->
