@@ -3,118 +3,156 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌸 Cute Photo Booth 🌸</title>
-  <!-- Google Font: Quicksand -->
+  <title>🌸 Cute Photo Booth</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
-  <!-- Floating hearts background (decorative) -->
+<body class="pb-app">
   <div class="hearts-bg" aria-hidden="true">
-    <span class="heart">💖</span>
-    <span class="heart">🌸</span>
-    <span class="heart">✨</span>
-    <span class="heart">💕</span>
-    <span class="heart">🌷</span>
+    <span class="heart">💖</span><span class="heart">🌸</span><span class="heart">✨</span>
+    <span class="heart">💕</span><span class="heart">🌷</span>
   </div>
 
-  <main class="container">
-    <header>
-      <h1>🌸 Cute Photo Booth 🌸</h1>
-      <p class="tagline">Snap a selfie with a frame!</p>
-    </header>
-
-    <section class="camera-section" aria-labelledby="live-feed-heading">
-      <h2 id="live-feed-heading" class="sr-only">Live camera feed</h2>
-
-      <!-- Video feed wrapper (rounded card) -->
-      <div class="video-wrapper">
-        <!-- Loading state while camera initializes -->
-        <div id="camera-loading" class="loading-overlay" role="status" aria-live="polite">
-          <div class="spinner"></div>
-          <p>Starting your camera... say cheese! 📸</p>
-        </div>
-        <!-- Error state if camera fails -->
-        <div id="camera-error" class="error-overlay hidden" role="alert">
-          <p>😢 Couldn't start the camera.</p>
-          <p>Please allow camera access and refresh the page.</p>
-        </div>
-        <video id="video" autoplay playsinline muted aria-label="Live camera preview"></video>
-        <!-- Frame overlay drawn by canvas in JS; visual frame placeholder -->
-        <canvas id="frame-canvas" class="frame-overlay" aria-hidden="true"></canvas>
-        <!-- Countdown and flash overlays -->
-        <div id="countdown" class="countdown-overlay hidden" aria-live="assertive"></div>
-        <div id="flash-overlay" class="flash-overlay hidden" aria-hidden="true"></div>
+  <header class="pb-header">
+    <div class="pb-header-inner">
+      <div>
+        <h1 class="pb-title">🌸 Cute Photo Booth</h1>
+        <p class="pb-subtitle">Photobooth v2 — full flow in your browser</p>
       </div>
-
-      <!-- Frame toggles -->
-      <div class="frame-toggles" role="group" aria-label="Choose photo frame">
-        <button type="button" class="frame-btn" data-frame="flower" aria-pressed="false" aria-label="Flower frame">
-          🌸 Flower
-        </button>
-        <button type="button" class="frame-btn" data-frame="star" aria-pressed="false" aria-label="Star sparkles frame">
-          ⭐ Stars
-        </button>
-        <button type="button" class="frame-btn" data-frame="heart" aria-pressed="false" aria-label="Heart corners frame">
-          💖 Hearts
-        </button>
-        <button type="button" class="frame-btn frame-btn-none" data-frame="none" aria-pressed="true" aria-label="No frame selected">
-          ✨ No frame
-        </button>
+      <div class="pb-header-actions">
+        <button type="button" id="btn-mute" class="pb-icon-btn" aria-label="Toggle sound" title="Sound">🔇</button>
+        <nav class="pb-steps" id="pb-steps" aria-label="Progress">
+          <span class="pb-step" data-step="layout">1</span>
+          <span class="pb-step-line"></span>
+          <span class="pb-step" data-step="theme">2</span>
+          <span class="pb-step-line"></span>
+          <span class="pb-step" data-step="capture">3</span>
+          <span class="pb-step-line"></span>
+          <span class="pb-step" data-step="review">4</span>
+        </nav>
       </div>
+    </div>
+  </header>
 
-      <!-- Filter toggles -->
-      <div class="filter-group" role="group" aria-label="Choose photo filter">
-        <button type="button" class="filter-btn active" data-filter="none" aria-pressed="true">
-          <span class="filter-swatch filter-swatch-none"></span>
-          <span class="filter-label">Normal</span>
-        </button>
-        <button type="button" class="filter-btn" data-filter="bw" aria-pressed="false">
-          <span class="filter-swatch filter-swatch-bw"></span>
-          <span class="filter-label">B&amp;W</span>
-        </button>
-        <button type="button" class="filter-btn" data-filter="warm" aria-pressed="false">
-          <span class="filter-swatch filter-swatch-warm"></span>
-          <span class="filter-label">Warm</span>
-        </button>
-        <button type="button" class="filter-btn" data-filter="cool" aria-pressed="false">
-          <span class="filter-swatch filter-swatch-cool"></span>
-          <span class="filter-label">Cool</span>
-        </button>
-      </div>
-
-      <!-- Capture & Download -->
-      <div class="actions">
-        <button type="button" id="capture-btn" class="btn btn-capture" aria-label="Take photo">
-          📸 Capture
-        </button>
-        <button type="button" id="download-btn" class="btn btn-download" aria-label="Download photo" disabled>
-          💾 Download
-        </button>
-      </div>
-
-      <!-- "Cheese!" popup (shown on capture) -->
-      <div id="cheese-popup" class="cheese-popup hidden" aria-live="polite">Cheese! 🧀</div>
-    </section>
-
-    <!-- Captured photo display (polaroid style) -->
-    <section class="captured-section" aria-labelledby="captured-heading">
-      <h2 id="captured-heading">Your photo</h2>
-      <div class="polaroid-wrapper">
-        <div id="captured-container" class="captured-container">
-          <p id="no-photo-yet" class="no-photo">Take a photo above to see it here! ✨</p>
-          <img id="captured-image" class="captured-image hidden" alt="Your captured photo" />
-        </div>
-      </div>
-    </section>
-
-    <footer class="instructions">
-      <p>📌 Allow camera access → pick a frame (optional) → tap Capture → Download to save.</p>
-    </footer>
+  <!-- 1 Layout -->
+  <main id="screen-layout" class="pb-screen pb-container">
+    <h2 class="pb-h2">Choose your layout</h2>
+    <p class="pb-lead">Select how your photos are arranged (same as Photobooth v2).</p>
+    <div id="layout-grid" class="pb-layout-grid"></div>
+    <div class="pb-nav">
+      <button type="button" id="btn-layout-next" class="btn btn-primary">Next →</button>
+    </div>
   </main>
 
-  <script src="js/script.js"></script>
+  <!-- 2 Theme -->
+  <main id="screen-theme" class="pb-screen pb-container hidden">
+    <h2 class="pb-h2">Pick your frame</h2>
+    <p class="pb-lead">Choose a frame style and optional caption.</p>
+    <h3 class="pb-h3">Classic frames</h3>
+    <div id="theme-grid-classic" class="pb-theme-grid"></div>
+    <h3 class="pb-h3">Cute animals</h3>
+    <div id="theme-grid-animal" class="pb-theme-grid"></div>
+    <div class="pb-caption-wrap">
+      <label for="caption-input">Custom caption (optional)</label>
+      <input type="text" id="caption-input" maxlength="30" placeholder="Add a caption..." autocomplete="off">
+      <p class="pb-caption-count"><span id="caption-len">0</span>/30</p>
+    </div>
+    <div class="pb-nav">
+      <button type="button" id="btn-theme-back" class="btn btn-outline">← Back</button>
+      <button type="button" id="btn-theme-next" class="btn btn-primary">Next →</button>
+    </div>
+  </main>
+
+  <!-- 3 Capture -->
+  <main id="screen-capture" class="pb-screen pb-container hidden">
+    <h2 class="pb-h2" id="capture-title">Strike a pose!</h2>
+    <p class="pb-lead" id="capture-subtitle"></p>
+
+    <div id="capture-controls-top" class="pb-capture-controls">
+      <div class="pb-filter-row" id="capture-filters" role="group" aria-label="Filter"></div>
+      <div class="pb-filter-row" id="capture-stickers" role="group" aria-label="Corner stickers"></div>
+      <div class="pb-timer-row">
+        <span class="pb-label">Timer</span>
+        <button type="button" class="pb-timer-btn" data-duration="3">3s</button>
+        <button type="button" class="pb-timer-btn active" data-duration="5">5s</button>
+        <button type="button" class="pb-timer-btn" data-duration="10">10s</button>
+      </div>
+    </div>
+
+    <div class="pb-video-shell">
+      <div id="capture-loading" class="loading-overlay">
+        <div class="spinner"></div>
+        <p>Starting camera…</p>
+      </div>
+      <div id="capture-error" class="error-overlay hidden" role="alert">
+        <p>Couldn’t access the camera.</p>
+        <button type="button" id="btn-retry-camera" class="btn btn-outline">Try again</button>
+      </div>
+      <video id="capture-video" class="pb-video" autoplay playsinline muted></video>
+      <div id="capture-countdown" class="countdown-overlay hidden" aria-live="assertive"></div>
+      <div id="capture-flash" class="flash-overlay hidden" aria-hidden="true"></div>
+      <div id="capture-cheese" class="pb-cheese hidden">Cheese! 🧀</div>
+    </div>
+
+    <div id="capture-thumbs" class="pb-thumbs"></div>
+
+    <div class="pb-nav">
+      <button type="button" id="btn-capture-back" class="btn btn-outline">← Back</button>
+      <button type="button" id="btn-start-sequence" class="btn btn-capture">Start</button>
+      <button type="button" id="btn-capture-next" class="btn btn-primary hidden">Next →</button>
+    </div>
+  </main>
+
+  <!-- 4 Review -->
+  <main id="screen-review" class="pb-screen pb-container hidden pb-review">
+    <h2 class="pb-h2">Review &amp; export</h2>
+    <p class="pb-lead">Reorder photos, add stickers, pick a filter, then download.</p>
+
+    <div class="pb-review-grid">
+      <aside class="pb-panel">
+        <h3 class="pb-h3">Photos</h3>
+        <p class="pb-small">Drag to reorder. Order fills the grid.</p>
+        <ul id="review-photo-list" class="pb-photo-list"></ul>
+      </aside>
+
+      <section class="pb-panel pb-preview-panel">
+        <div class="pb-sticker-palette" id="review-sticker-palette"></div>
+        <p id="review-place-hint" class="pb-small hidden">Click the preview to place sticker.</p>
+        <div id="review-preview-wrap" class="pb-preview-wrap">
+          <canvas id="review-canvas"></canvas>
+        </div>
+        <label class="pb-qr-check">
+          <input type="checkbox" id="review-include-qr" checked>
+          Include QR code (decorative)
+        </label>
+      </section>
+
+      <aside class="pb-panel">
+        <h3 class="pb-h3">Export filter</h3>
+        <div id="review-filters" class="pb-review-filters"></div>
+      </aside>
+    </div>
+
+    <div class="pb-export-bar">
+      <button type="button" id="btn-review-back" class="btn btn-outline">← Back</button>
+      <button type="button" id="btn-png" class="btn btn-primary">Download PNG</button>
+      <button type="button" id="btn-pdf" class="btn btn-download">Print / PDF</button>
+      <button type="button" id="btn-gif" class="btn btn-download">Download GIF</button>
+      <button type="button" id="btn-start-over" class="btn btn-outline">Start over</button>
+    </div>
+    <p id="gif-status" class="pb-small hidden" aria-live="polite"></p>
+  </main>
+
+  <footer class="pb-footer">
+    <p>Made with love · Cute Photo Booth · 2026</p>
+  </footer>
+
+  <script src="js/photobooth-data.js"></script>
+  <script src="js/canvas-stickers.js"></script>
+  <script src="js/canvas-composite.js"></script>
+  <script src="js/sound-effects.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
