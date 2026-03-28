@@ -1,6 +1,6 @@
 # 🌸 Cute Photo Booth
 
-A **vanilla HTML/CSS/JavaScript** photo booth that mirrors the **`photobooth-v2` Next.js app** in flow and features: layout → theme → capture → review & export.
+A **vanilla HTML/CSS/JavaScript** photo booth: layout → theme → capture → review & export.
 
 ## What’s included
 
@@ -20,8 +20,6 @@ A **vanilla HTML/CSS/JavaScript** photo booth that mirrors the **`photobooth-v2`
 | `js/canvas-composite.js` | Final strip/grid composite + decorations + QR |
 | `js/sound-effects.js` | Shutter + export chime (Web Audio API) |
 | `js/app.js` | Navigation, camera, capture, review |
-
-The **`photobooth-v2/`** folder remains the React/TypeScript implementation; this root project is the **JavaScript** deployment.
 
 ## Run locally
 
