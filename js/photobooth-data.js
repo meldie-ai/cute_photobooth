@@ -4,16 +4,18 @@
 (function (global) {
   global.PB_DATA = {
     STICKERS: {
-      symbols: ["★", "♥", "✦", "✿", "☁", "✌"],
+      symbols: ["⭐", "❤️", "✨", "🌸", "☁️", "✌️"],
       text: ["LOL", "BFF", "CUTE", "OMG", "XOXO"],
-      seasonal: ["☃", "☀", "🎃", "🎄"],
+      seasonal: ["⛄", "☀️", "🎃", "🎄"],
     },
     QUICK_FILTER_IDS: ["none", "bw", "warm", "cool"],
     STICKER_FRAME_OPTIONS: [
       { id: "none", label: "No stickers", emoji: "✨" },
       { id: "flower", label: "Flower", emoji: "🌸" },
-      { id: "star", label: "Stars", emoji: "⭐" },
+      { id: "star", label: "Star", emoji: "⭐" },
       { id: "heart", label: "Hearts", emoji: "💖" },
+      { id: "sparkle", label: "Sparkle", emoji: "✨" },
+      { id: "bow", label: "Bow", emoji: "🎀" },
     ],
     LAYOUTS: [
       { id: "classic-strip", name: "Classic Strip", description: "4 shots vertical (1×4)", cols: 1, rows: 4, slots: 4 },
