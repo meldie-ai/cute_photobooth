@@ -231,19 +231,26 @@
   function captureOnePhoto() {
     var v = $("capture-video");
     if (!v || !v.srcObject || v.readyState < 2) return null;
-    var w = v.videoWidth;
-    var h = v.videoHeight;
-    hiddenCanvas.width = w;
-    hiddenCanvas.height = h;
+    var vw = v.videoWidth;
+    var vh = v.videoHeight;
+    // Crop to a centered square at capture time, matching the square crop
+    // every downstream consumer (thumbnails, composite export) applies —
+    // otherwise corner stickers placed near the edges of a wide camera
+    // frame get cropped away later and never actually appear.
+    var side = Math.min(vw, vh);
+    var sx = (vw - side) / 2;
+    var sy = (vh - side) / 2;
+    hiddenCanvas.width = side;
+    hiddenCanvas.height = side;
     var ctx = hiddenCtx;
     ctx.save();
     ctx.filter = window.PB_getFilterCss(state.captureFilter);
-    ctx.translate(w, 0);
+    ctx.translate(side, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(v, 0, 0, w, h);
+    ctx.drawImage(v, sx, sy, side, side, 0, 0, side, side);
     ctx.restore();
     if (state.stickerFrame !== "none") {
-      window.PB_drawStickerCorners(ctx, w, h, state.stickerFrame);
+      window.PB_drawStickerCorners(ctx, side, side, state.stickerFrame);
     }
     return hiddenCanvas.toDataURL("image/png");
   }
@@ -401,16 +408,28 @@
     var wrap = $("review-sticker-palette");
     wrap.innerHTML =
       "<strong>Add stickers</strong>" +
-      '<p class="pb-sticker-hint">Drag placed stickers to move · Backspace to delete</p>' +
+      '<p class="pb-sticker-hint">Click a sticker on the photo to select it, then drag to move it.</p>' +
+      '<button type="button" id="review-sticker-delete" class="pb-sticker-delete-btn hidden">🗑 Remove selected sticker</button>' +
       '<div class="pb-sticker-row"></div>';
     var row = wrap.querySelector(".pb-sticker-row");
-    function addChip(text, isText) {
+    $("review-sticker-delete").addEventListener("click", deleteSelectedSticker);
+    function addChip(placing, label, isIcon) {
       var b = document.createElement("button");
       b.type = "button";
       b.className = "pb-sticker-chip";
-      b.textContent = text;
+      if (isIcon) {
+        var swatch = document.createElement("canvas");
+        swatch.width = 28;
+        swatch.height = 28;
+        b.appendChild(swatch);
+        var sctx = swatch.getContext("2d");
+        window.PB_StickerDrawers[placing.value](sctx, 14, 14, 10);
+      } else {
+        b.textContent = label;
+      }
+      b.title = label;
       b.addEventListener("click", function () {
-        state.placingSticker = text;
+        state.placingSticker = placing;
         row.querySelectorAll(".pb-sticker-chip").forEach(function (el) {
           el.classList.remove("placing");
         });
@@ -420,12 +439,16 @@
       });
       row.appendChild(b);
     }
-    D.STICKERS.symbols.forEach(function (s) { addChip(s); });
-    D.STICKERS.text.forEach(function (s) { addChip(s, true); });
+    D.STICKERS.icons.forEach(function (opt) {
+      addChip({ type: "icon", value: opt.id }, opt.label, true);
+    });
+    D.STICKERS.text.forEach(function (s) {
+      addChip({ type: "text", value: s }, s, false);
+    });
     var d = new Date();
     var months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
-    addChip(d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear());
-    D.STICKERS.seasonal.forEach(function (s) { addChip(s); });
+    var dateLabel = d.getDate() + " " + months[d.getMonth()] + " " + d.getFullYear();
+    addChip({ type: "text", value: dateLabel }, dateLabel, false);
   }
 
   function renderPhotoList() {
@@ -490,6 +513,21 @@
     });
   }
 
+  function updateStickerDeleteButton() {
+    var btn = $("review-sticker-delete");
+    if (btn) btn.classList.toggle("hidden", !state.selectedStickerId);
+  }
+
+  function deleteSelectedSticker() {
+    if (!state.selectedStickerId) return;
+    state.stickers = state.stickers.filter(function (s) {
+      return s.id !== state.selectedStickerId;
+    });
+    state.selectedStickerId = null;
+    updateStickerDeleteButton();
+    redrawComposite();
+  }
+
   function setupReviewCanvasInteractions() {
     var wrap = $("review-preview-wrap");
     var hint = $("review-place-hint");
@@ -509,7 +547,8 @@
       if (state.placingSticker) {
         state.stickers.push({
           id: "s-" + Date.now(),
-          content: state.placingSticker,
+          type: state.placingSticker.type,
+          value: state.placingSticker.value,
           x: pos.x,
           y: pos.y,
           size: 40,
@@ -517,6 +556,7 @@
         state.placingSticker = null;
         state.selectedStickerId = null;
         clearPlacingChipHighlight();
+        updateStickerDeleteButton();
         hint.classList.add("hidden");
         wrap.classList.remove("pb-crosshair");
         redrawComposite();
@@ -531,6 +571,7 @@
       } else {
         state.selectedStickerId = null;
       }
+      updateStickerDeleteButton();
       redrawComposite();
     };
 
@@ -775,12 +816,8 @@
       if (state.screen !== "review" || !state.selectedStickerId) return;
       var active = document.activeElement;
       if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
-      state.stickers = state.stickers.filter(function (s) {
-        return s.id !== state.selectedStickerId;
-      });
-      state.selectedStickerId = null;
       e.preventDefault();
-      redrawComposite();
+      deleteSelectedSticker();
     });
 
     $("btn-png").addEventListener("click", downloadPNG);

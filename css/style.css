@@ -775,6 +775,31 @@ body {
   color: var(--gray-400);
 }
 
+.pb-sticker-delete-btn {
+  display: block;
+  width: 100%;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-primary);
+  background: var(--color-primary-tint);
+  color: var(--color-primary-dark);
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.pb-sticker-delete-btn:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-soft);
+}
+
+.pb-sticker-delete-btn:active {
+  transform: scale(0.97);
+}
+
 .pb-sticker-row {
   display: flex;
   flex-wrap: wrap;
@@ -782,14 +807,26 @@ body {
 }
 
 .pb-sticker-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 2.25rem;
   height: 2.25rem;
+  padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
   border: 1px solid var(--gray-100);
   background: var(--gray-50);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.85rem;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 600;
+  color: var(--gray-700);
   transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+}
+
+.pb-sticker-chip canvas {
+  display: block;
+  border-radius: var(--radius-pill);
 }
 
 .pb-sticker-chip:hover {

@@ -167,6 +167,28 @@
     ctx.fill();
   }
 
+  // Cache decoded photo images across redraws so rapid successive calls
+  // (dragging a sticker, quickly clicking through filters) don't re-fetch
+  // and re-decode the same data URLs dozens of times a second.
+  var imageCache = {};
+  function loadCachedImage(src) {
+    var cached = imageCache[src];
+    if (cached && cached.complete && cached.naturalWidth > 0) {
+      return Promise.resolve(cached);
+    }
+    return new Promise(function (res) {
+      var img = new Image();
+      img.onload = function () {
+        imageCache[src] = img;
+        res(img);
+      };
+      img.onerror = function () {
+        res(null);
+      };
+      img.src = src;
+    });
+  }
+
   function getCanvasDimensions(layout, theme, caption, includeStamp) {
     var photoSize = 300;
     var borderWidth = theme.borderWidth;
@@ -214,38 +236,39 @@
         return;
       }
 
-      canvas.width = dims.width;
-      canvas.height = dims.height;
+      // Stale-draw guard: if another PB_drawComposite call starts on this
+      // same canvas before this one finishes loading its images, this call
+      // is outdated — it must never be allowed to paint over the newer
+      // one's result once its own async image loads resolve.
+      var myToken = (canvas.__pbDrawToken || 0) + 1;
+      canvas.__pbDrawToken = myToken;
 
-      ctx.fillStyle = theme.backgroundColor;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      if (theme.id === "party-confetti") {
-        var confettiColors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#95e1d3", "#f38181"];
-        for (var c = 0; c < 100; c++) {
-          ctx.fillStyle = confettiColors[c % confettiColors.length];
-          ctx.beginPath();
-          ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 4 + 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      var loadPromises = photos.map(function (src) {
-        return new Promise(function (res) {
-          var img = new Image();
-          img.crossOrigin = "anonymous";
-          img.onload = function () {
-            res(img);
-          };
-          img.onerror = function () {
-            res(null);
-          };
-          img.src = src;
-        });
-      });
+      var loadPromises = photos.map(loadCachedImage);
 
       Promise.all(loadPromises)
         .then(function (loadedPhotos) {
+          if (canvas.__pbDrawToken !== myToken) {
+            // A newer draw call has since started; drop this stale result.
+            resolve();
+            return;
+          }
+
+          canvas.width = dims.width;
+          canvas.height = dims.height;
+
+          ctx.fillStyle = theme.backgroundColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          if (theme.id === "party-confetti") {
+            var confettiColors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#95e1d3", "#f38181"];
+            for (var c = 0; c < 100; c++) {
+              ctx.fillStyle = confettiColors[c % confettiColors.length];
+              ctx.beginPath();
+              ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 4 + 2, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+
           if (filterCss !== "none") ctx.filter = filterCss;
 
           loadedPhotos.forEach(function (img, index) {

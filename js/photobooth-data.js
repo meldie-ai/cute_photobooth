@@ -4,9 +4,21 @@
 (function (global) {
   global.PB_DATA = {
     STICKERS: {
-      symbols: ["⭐", "❤️", "✨", "🌸", "☁️", "✌️"],
+      // Icon stickers are custom-drawn (js/canvas-stickers.js PB_StickerDrawers)
+      // rather than emoji, so they match the app's own illustrated style.
+      icons: [
+        { id: "star", label: "Star" },
+        { id: "heart", label: "Heart" },
+        { id: "sparkle", label: "Sparkle" },
+        { id: "flower", label: "Flower" },
+        { id: "bow", label: "Bow" },
+        { id: "cloud", label: "Cloud" },
+        { id: "sun", label: "Sun" },
+        { id: "snowman", label: "Snowman" },
+        { id: "pumpkin", label: "Pumpkin" },
+        { id: "tree", label: "Tree" },
+      ],
       text: ["LOL", "BFF", "CUTE", "OMG", "XOXO"],
-      seasonal: ["⛄", "☀️", "🎃", "🎄"],
     },
     QUICK_FILTER_IDS: ["none", "bw", "warm", "cool"],
     STICKER_FRAME_OPTIONS: [
