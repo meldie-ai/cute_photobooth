@@ -21,12 +21,13 @@
     reviewFilter: "none",
     stickers: [],
     placingSticker: null,
-    includeQR: true,
+    includeStamp: true,
     isCapturing: false,
     stream: null,
     draggedPhotoIndex: null,
     draggingStickerId: null,
     stickerOffset: { x: 0, y: 0 },
+    selectedStickerId: null,
   };
 
   var hiddenCanvas = document.createElement("canvas");
@@ -106,11 +107,12 @@
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "pb-theme-card" + (state.themeId === theme.id ? " selected" : "");
-      var prev = document.createElement("div");
+      var prev = document.createElement("canvas");
       prev.className = "pb-theme-preview";
-      prev.style.background = theme.backgroundColor;
-      prev.style.border = "3px solid " + theme.borderColor;
+      prev.width = 90;
+      prev.height = 120;
       btn.appendChild(prev);
+      window.PB_drawThemePreview(prev, theme);
       var label = document.createElement("span");
       label.textContent = theme.name;
       btn.appendChild(label);
@@ -205,7 +207,17 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "frame-btn" + (state.stickerFrame === opt.id ? " active" : "");
-      b.textContent = opt.emoji + " " + opt.label;
+      if (opt.id !== "none") {
+        var swatch = document.createElement("canvas");
+        swatch.className = "frame-btn-swatch";
+        swatch.width = 28;
+        swatch.height = 28;
+        b.appendChild(swatch);
+        window.PB_drawStickerFramePreview(swatch, opt.id);
+      }
+      var text = document.createElement("span");
+      text.textContent = opt.emoji + " " + opt.label;
+      b.appendChild(text);
       b.addEventListener("click", function () {
         state.stickerFrame = opt.id;
         row.querySelectorAll(".frame-btn").forEach(function (el, i) {
@@ -292,10 +304,23 @@
     }
     thumbs.innerHTML = "";
     state.photos.forEach(function (url, i) {
+      var wrap = document.createElement("div");
+      wrap.className = "pb-thumb-wrap";
       var img = document.createElement("img");
       img.src = url;
       img.alt = "Photo " + (i + 1);
-      thumbs.appendChild(img);
+      wrap.appendChild(img);
+      if (!state.isCapturing) {
+        var retake = document.createElement("button");
+        retake.type = "button";
+        retake.className = "pb-thumb-retake";
+        retake.dataset.index = String(i);
+        retake.title = "Retake photo " + (i + 1);
+        retake.setAttribute("aria-label", "Retake photo " + (i + 1));
+        retake.textContent = "↻";
+        wrap.appendChild(retake);
+      }
+      thumbs.appendChild(wrap);
     });
     var complete = state.photos.length >= layout.slots;
     if (btnStart) {
@@ -325,6 +350,19 @@
     updateCaptureUI();
   }
 
+  async function retakeOnePhoto(index) {
+    if (state.isCapturing || index < 0 || index >= state.photos.length) return;
+    state.isCapturing = true;
+    updateCaptureUI();
+    await runCountdown(state.countdownDuration);
+    Sound.playShutterClick();
+    flashAndCheese();
+    var dataUrl = captureOnePhoto();
+    if (dataUrl) state.photos[index] = dataUrl;
+    state.isCapturing = false;
+    updateCaptureUI();
+  }
+
   /* ---------- Review ---------- */
   function redrawComposite() {
     return window.PB_drawComposite($("review-canvas"), {
@@ -333,8 +371,9 @@
       theme: getTheme(),
       caption: state.caption,
       stickers: state.stickers,
+      selectedStickerId: state.selectedStickerId,
       selectedFilter: state.reviewFilter,
-      includeQR: state.includeQR,
+      includeStamp: state.includeStamp,
       includeStickers: true,
     }).catch(function (e) {
       console.error(e);
@@ -360,7 +399,10 @@
 
   function renderStickerPalette() {
     var wrap = $("review-sticker-palette");
-    wrap.innerHTML = "<strong>Add stickers</strong><div class=\"pb-sticker-row\"></div>";
+    wrap.innerHTML =
+      "<strong>Add stickers</strong>" +
+      '<p class="pb-sticker-hint">Drag placed stickers to move · Backspace to delete</p>' +
+      '<div class="pb-sticker-row"></div>';
     var row = wrap.querySelector(".pb-sticker-row");
     function addChip(text, isText) {
       var b = document.createElement("button");
@@ -369,6 +411,10 @@
       b.textContent = text;
       b.addEventListener("click", function () {
         state.placingSticker = text;
+        row.querySelectorAll(".pb-sticker-chip").forEach(function (el) {
+          el.classList.remove("placing");
+        });
+        b.classList.add("placing");
         $("review-place-hint").classList.remove("hidden");
         $("review-preview-wrap").classList.add("pb-crosshair");
       });
@@ -417,29 +463,100 @@
     });
   }
 
-  function setupReviewCanvasClick() {
+  function getCanvasCoords(e) {
+    var canvas = $("review-canvas");
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }
+
+  function hitTestSticker(x, y) {
+    for (var i = state.stickers.length - 1; i >= 0; i--) {
+      var s = state.stickers[i];
+      var half = s.size * 0.6;
+      if (Math.abs(x - s.x) <= half && Math.abs(y - s.y) <= half) return s;
+    }
+    return null;
+  }
+
+  function clearPlacingChipHighlight() {
+    var row = document.querySelector("#review-sticker-palette .pb-sticker-row");
+    if (row) row.querySelectorAll(".pb-sticker-chip").forEach(function (el) {
+      el.classList.remove("placing");
+    });
+  }
+
+  function setupReviewCanvasInteractions() {
     var wrap = $("review-preview-wrap");
     var hint = $("review-place-hint");
-    wrap.onclick = function (e) {
-      if (!state.placingSticker) return;
-      var canvas = $("review-canvas");
-      var rect = canvas.getBoundingClientRect();
-      var scaleX = canvas.width / rect.width;
-      var scaleY = canvas.height / rect.height;
-      var x = (e.clientX - rect.left) * scaleX;
-      var y = (e.clientY - rect.top) * scaleY;
-      state.stickers.push({
-        id: "s-" + Date.now(),
-        content: state.placingSticker,
-        x: x,
-        y: y,
-        size: 40,
+    var dragRedrawQueued = false;
+
+    function queueDragRedraw() {
+      if (dragRedrawQueued) return;
+      dragRedrawQueued = true;
+      requestAnimationFrame(function () {
+        dragRedrawQueued = false;
+        redrawComposite();
       });
-      state.placingSticker = null;
-      hint.classList.add("hidden");
-      $("review-preview-wrap").classList.remove("pb-crosshair");
+    }
+
+    wrap.onmousedown = function (e) {
+      var pos = getCanvasCoords(e);
+      if (state.placingSticker) {
+        state.stickers.push({
+          id: "s-" + Date.now(),
+          content: state.placingSticker,
+          x: pos.x,
+          y: pos.y,
+          size: 40,
+        });
+        state.placingSticker = null;
+        state.selectedStickerId = null;
+        clearPlacingChipHighlight();
+        hint.classList.add("hidden");
+        wrap.classList.remove("pb-crosshair");
+        redrawComposite();
+        return;
+      }
+      var hit = hitTestSticker(pos.x, pos.y);
+      if (hit) {
+        state.selectedStickerId = hit.id;
+        state.draggingStickerId = hit.id;
+        state.stickerOffset = { x: pos.x - hit.x, y: pos.y - hit.y };
+        wrap.classList.add("pb-grabbing");
+      } else {
+        state.selectedStickerId = null;
+      }
       redrawComposite();
     };
+
+    window.addEventListener("mousemove", function (e) {
+      if (!state.draggingStickerId) return;
+      var pos = getCanvasCoords(e);
+      var sticker = state.stickers.find(function (s) { return s.id === state.draggingStickerId; });
+      if (!sticker) return;
+      sticker.x = pos.x - state.stickerOffset.x;
+      sticker.y = pos.y - state.stickerOffset.y;
+      queueDragRedraw();
+    });
+
+    window.addEventListener("mouseup", function () {
+      if (state.draggingStickerId) {
+        state.draggingStickerId = null;
+        wrap.classList.remove("pb-grabbing");
+        redrawComposite();
+      }
+    });
+
+    wrap.addEventListener("mousemove", function (e) {
+      if (state.draggingStickerId || state.placingSticker) return;
+      var pos = getCanvasCoords(e);
+      wrap.classList.toggle("pb-grab", !!hitTestSticker(pos.x, pos.y));
+    });
   }
 
   function downloadPNG() {
@@ -488,7 +605,7 @@
     status.classList.remove("hidden");
     loadGifJs()
       .then(function (GIF) {
-        var dims = window.PB_getCanvasDimensions(layout, theme, state.caption, state.includeQR);
+        var dims = window.PB_getCanvasDimensions(layout, theme, state.caption, state.includeStamp);
         var photos = state.orderedPhotos.slice(0, layout.slots);
         var filter = D.FILTERS.find(function (f) {
           return f.id === state.reviewFilter;
@@ -543,12 +660,7 @@
             }
             fctx.drawImage(img, srcX, srcY, srcW, srcH, dims.borderWidth, dims.borderWidth, dims.photoSize, dims.photoSize);
             fctx.filter = "none";
-            state.stickers.forEach(function (st) {
-              fctx.font = st.size + "px sans-serif";
-              fctx.textAlign = "center";
-              fctx.textBaseline = "middle";
-              fctx.fillText(st.content, st.x, st.y);
-            });
+            window.PB_drawPlacedStickers(fctx, state.stickers);
             var sc = document.createElement("canvas");
             sc.width = w;
             sc.height = h;
@@ -624,30 +736,51 @@
       runCaptureSequence();
     });
 
+    $("capture-thumbs").addEventListener("click", function (e) {
+      var btn = e.target.closest(".pb-thumb-retake");
+      if (!btn || state.isCapturing) return;
+      retakeOnePhoto(parseInt(btn.dataset.index, 10));
+    });
+
     $("btn-capture-next").addEventListener("click", function () {
       stopCamera();
       state.orderedPhotos = state.photos.slice();
       state.stickers = [];
       state.reviewFilter = "none";
       state.placingSticker = null;
+      state.selectedStickerId = null;
       showScreen("review");
       renderReviewFilters();
       renderStickerPalette();
       renderPhotoList();
-      setupReviewCanvasClick();
-      $("review-include-qr").checked = true;
-      state.includeQR = true;
-      $("review-include-qr").onchange = function () {
-        state.includeQR = this.checked;
+      setupReviewCanvasInteractions();
+      $("review-include-stamp").checked = true;
+      state.includeStamp = true;
+      $("review-include-stamp").onchange = function () {
+        state.includeStamp = this.checked;
         redrawComposite();
       };
       setTimeout(redrawComposite, 100);
     });
 
     $("btn-review-back").addEventListener("click", function () {
+      state.photos = [];
       showScreen("capture");
       startCamera();
       updateCaptureUI();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Backspace" && e.key !== "Delete") return;
+      if (state.screen !== "review" || !state.selectedStickerId) return;
+      var active = document.activeElement;
+      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+      state.stickers = state.stickers.filter(function (s) {
+        return s.id !== state.selectedStickerId;
+      });
+      state.selectedStickerId = null;
+      e.preventDefault();
+      redrawComposite();
     });
 
     $("btn-png").addEventListener("click", downloadPNG);

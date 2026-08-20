@@ -167,20 +167,20 @@
     ctx.fill();
   }
 
-  function getCanvasDimensions(layout, theme, caption, includeQR) {
+  function getCanvasDimensions(layout, theme, caption, includeStamp) {
     var photoSize = 300;
     var borderWidth = theme.borderWidth;
     var captionHeight = caption ? 40 : 0;
-    var qrSpace = includeQR ? 80 : 0;
+    var stampSpace = includeStamp ? 80 : 0;
     var contentWidth = photoSize * layout.cols + (layout.cols - 1) * 8;
     var contentHeight = photoSize * layout.rows + (layout.rows - 1) * 8;
     return {
       width: contentWidth + borderWidth * 2,
-      height: contentHeight + borderWidth * 2 + captionHeight + qrSpace,
+      height: contentHeight + borderWidth * 2 + captionHeight + stampSpace,
       photoSize: photoSize,
       borderWidth: borderWidth,
       captionHeight: captionHeight,
-      qrSpace: qrSpace,
+      stampSpace: stampSpace,
       contentWidth: contentWidth,
       contentHeight: contentHeight,
     };
@@ -198,15 +198,16 @@
       var caption = options.caption || "";
       var stickers = options.stickers || [];
       var selectedFilter = options.selectedFilter || "none";
-      var includeQR = options.includeQR !== false;
+      var includeStamp = options.includeStamp !== false;
       var includeStickers = options.includeStickers !== false;
+      var selectedStickerId = options.selectedStickerId || null;
 
       var filterObj = global.PB_DATA.FILTERS.find(function (f) {
         return f.id === selectedFilter;
       });
       var filterCss = filterObj && filterObj.cssFilter !== "none" ? filterObj.cssFilter : "none";
 
-      var dims = getCanvasDimensions(layout, theme, caption, includeQR);
+      var dims = getCanvasDimensions(layout, theme, caption, includeStamp);
       var ctx = canvas.getContext("2d");
       if (!ctx) {
         reject(new Error("no context"));
@@ -319,7 +320,7 @@
               }
             }
             if (theme.isAnimalTheme && theme.cornerDecorType) {
-              drawAnimalDecorations(ctx, theme, canvas.width, canvas.height - dims.qrSpace, dims.borderWidth, dims.captionHeight);
+              drawAnimalDecorations(ctx, theme, canvas.width, canvas.height - dims.stampSpace, dims.borderWidth, dims.captionHeight);
             }
           }
 
@@ -333,48 +334,43 @@
             ctx.fillText(labelText, canvas.width / 2, dims.contentHeight + dims.borderWidth * 2 + 20);
           }
 
-          if (includeStickers && stickers.length > 0) {
-            stickers.forEach(function (sticker) {
-              ctx.font = sticker.size + "px sans-serif";
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              ctx.fillText(sticker.content, sticker.x, sticker.y);
-            });
+          if (includeStickers) {
+            global.PB_drawPlacedStickers(ctx, stickers, selectedStickerId);
           }
 
-          if (includeQR) {
+          if (includeStamp) {
             try {
-              var qrSize = 60;
-              var qrX = canvas.width - qrSize - 15;
-              var qrY = canvas.height - qrSize - 25;
-              ctx.fillStyle = "#ffffff";
-              ctx.fillRect(qrX - 5, qrY - 5, qrSize + 10, qrSize + 10);
-              ctx.fillStyle = "#000000";
-              var moduleSize = qrSize / 21;
-              function drawFinder(x, y) {
-                ctx.fillRect(x, y, moduleSize * 7, moduleSize);
-                ctx.fillRect(x, y + moduleSize * 6, moduleSize * 7, moduleSize);
-                ctx.fillRect(x, y, moduleSize, moduleSize * 7);
-                ctx.fillRect(x + moduleSize * 6, y, moduleSize, moduleSize * 7);
-                ctx.fillRect(x + moduleSize * 2, y + moduleSize * 2, moduleSize * 3, moduleSize * 3);
+              var stampR = 34;
+              var stampX = canvas.width - stampR - 20;
+              var stampY = canvas.height - stampR - 20;
+              ctx.save();
+              ctx.fillStyle = theme.backgroundColor;
+              ctx.beginPath();
+              ctx.arc(stampX, stampY, stampR, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.strokeStyle = theme.textColor;
+              ctx.lineWidth = 1.5;
+              var scallopCount = 16;
+              var scallopR = 3.5;
+              for (var sc2 = 0; sc2 < scallopCount; sc2++) {
+                var ang = (sc2 / scallopCount) * Math.PI * 2;
+                ctx.beginPath();
+                ctx.arc(stampX + Math.cos(ang) * stampR, stampY + Math.sin(ang) * stampR, scallopR, 0, Math.PI * 2);
+                ctx.stroke();
               }
-              drawFinder(qrX, qrY);
-              drawFinder(qrX + moduleSize * 14, qrY);
-              drawFinder(qrX, qrY + moduleSize * 14);
-              for (var i = 0; i < 21; i++) {
-                for (var j = 0; j < 21; j++) {
-                  if (
-                    Math.random() > 0.6 &&
-                    !((i < 8 && j < 8) || (i > 12 && j < 8) || (i < 8 && j > 12))
-                  ) {
-                    ctx.fillRect(qrX + i * moduleSize, qrY + j * moduleSize, moduleSize, moduleSize);
-                  }
-                }
-              }
+              ctx.beginPath();
+              ctx.arc(stampX, stampY, stampR - 6, 0, Math.PI * 2);
+              ctx.stroke();
               ctx.fillStyle = theme.textColor;
-              ctx.font = "10px sans-serif";
+              drawHeart(ctx, stampX, stampY - stampR * 0.55, 8);
+              var stampDate = new Date();
+              var stampMonths = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+              ctx.font = "bold 10px sans-serif";
               ctx.textAlign = "center";
-              ctx.fillText("scan to try", qrX + qrSize / 2, canvas.height - 8);
+              ctx.fillText(String(stampDate.getDate()), stampX, stampY + 1);
+              ctx.font = "8px sans-serif";
+              ctx.fillText(stampMonths[stampDate.getMonth()] + " " + stampDate.getFullYear(), stampX, stampY + 13);
+              ctx.restore();
             } catch (e) {
               console.error(e);
             }
