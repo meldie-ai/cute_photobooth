@@ -135,31 +135,175 @@
   }
 
   function drawBow(ctx, x, y, size) {
-    var loopR = size * 0.55;
-    ctx.strokeStyle = "rgba(197, 197, 232, 0.8)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#9b8fd6";
+    ctx.lineWidth = 1.2;
+    // two triangular ribbon loops, pinched at the center knot — reads as a
+    // bow silhouette even at small sizes, unlike softly-curved blobs.
     [-1, 1].forEach(function (side) {
-      var grad = ctx.createLinearGradient(x, y - loopR, x + side * loopR * 1.4, y + loopR);
+      var grad = ctx.createLinearGradient(x, y - size * 0.5, x + side * size * 0.85, y + size * 0.5);
       grad.addColorStop(0, "#F0EBFF");
       grad.addColorStop(1, "#C5C5E8");
       ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(x, y);
-      ctx.quadraticCurveTo(x + side * loopR * 1.6, y - loopR * 1.1, x + side * loopR * 1.7, y);
-      ctx.quadraticCurveTo(x + side * loopR * 1.6, y + loopR * 1.1, x, y);
+      ctx.lineTo(x + side * size * 0.85, y - size * 0.55);
+      ctx.lineTo(x + side * size * 0.85, y + size * 0.55);
       ctx.closePath();
       ctx.fill();
       ctx.stroke();
     });
+    // small ribbon tails hanging below the knot
+    ctx.fillStyle = "#C5C5E8";
+    [-1, 1].forEach(function (side) {
+      ctx.beginPath();
+      ctx.moveTo(x + side * size * 0.1, y + size * 0.15);
+      ctx.lineTo(x + side * size * 0.2, y + size * 0.7);
+      ctx.lineTo(x + side * size * 0.02, y + size * 0.5);
+      ctx.closePath();
+      ctx.fill();
+    });
     // center knot
-    var knotGrad = ctx.createRadialGradient(x, y, 0, x, y, size * 0.32);
+    var knotGrad = ctx.createRadialGradient(x, y, 0, x, y, size * 0.3);
     knotGrad.addColorStop(0, "#E6E6FA");
     knotGrad.addColorStop(1, "#9b8fd6");
     ctx.fillStyle = knotGrad;
     ctx.beginPath();
-    ctx.ellipse(x, y, size * 0.28, size * 0.22, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, y, size * 0.24, size * 0.28, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+  }
+
+  function drawCloud(ctx, x, y, size) {
+    var grad = ctx.createLinearGradient(x, y - size * 0.5, x, y + size * 0.35);
+    grad.addColorStop(0, "#ffffff");
+    grad.addColorStop(1, "#DCEBFF");
+    ctx.fillStyle = grad;
+    // A cluster of overlapping puffs, no separate flat base — reads as a
+    // rounder, more distinctly "cloud" silhouette at small sizes.
+    var puffs = [
+      [x - size * 0.5, y + size * 0.12, size * 0.34],
+      [x - size * 0.16, y - size * 0.16, size * 0.44],
+      [x + size * 0.24, y - size * 0.08, size * 0.4],
+      [x + size * 0.58, y + size * 0.12, size * 0.3],
+    ];
+    ctx.beginPath();
+    puffs.forEach(function (p) {
+      ctx.moveTo(p[0] + p[2], p[1]);
+      ctx.arc(p[0], p[1], p[2], 0, Math.PI * 2);
+    });
+    ctx.fill();
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = "#A9C6EA";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x - size * 0.75, y + size * 0.2);
+    ctx.quadraticCurveTo(x - size * 0.16, y - size * 0.55, x + size * 0.24, y - size * 0.42);
+    ctx.quadraticCurveTo(x + size * 0.75, y - size * 0.3, x + size * 0.85, y + size * 0.15);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSun(ctx, x, y, size) {
+    ctx.save();
+    ctx.strokeStyle = "#FFD54F";
+    ctx.lineWidth = size * 0.14;
+    ctx.lineCap = "round";
+    for (var i = 0; i < 8; i++) {
+      var a = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(x + Math.cos(a) * size * 0.65, y + Math.sin(a) * size * 0.65);
+      ctx.lineTo(x + Math.cos(a) * size * 0.95, y + Math.sin(a) * size * 0.95);
+      ctx.stroke();
+    }
+    var grad = ctx.createRadialGradient(x - size * 0.15, y - size * 0.15, size * 0.05, x, y, size * 0.55);
+    grad.addColorStop(0, "#FFF3B0");
+    grad.addColorStop(1, "#FFB300");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawSnowman(ctx, x, y, size) {
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#B0BEC5";
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.arc(x, y + size * 0.32, size * 0.48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, y - size * 0.28, size * 0.34, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // top hat — a strong dark silhouette makes the whole icon read as
+    // "snowman" at a glance, even where the white body has low contrast.
+    ctx.fillStyle = "#37474F";
+    ctx.beginPath();
+    ctx.ellipse(x, y - size * 0.55, size * 0.32, size * 0.07, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillRect(x - size * 0.18, y - size * 0.85, size * 0.36, size * 0.32);
+    ctx.fillStyle = "#FF7043";
+    ctx.beginPath();
+    ctx.moveTo(x, y - size * 0.28);
+    ctx.lineTo(x + size * 0.3, y - size * 0.22);
+    ctx.lineTo(x, y - size * 0.17);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#263238";
+    ctx.beginPath();
+    ctx.arc(x - size * 0.1, y - size * 0.35, size * 0.055, 0, Math.PI * 2);
+    ctx.arc(x + size * 0.08, y - size * 0.35, size * 0.055, 0, Math.PI * 2);
+    ctx.arc(x, y + size * 0.18, size * 0.055, 0, Math.PI * 2);
+    ctx.arc(x, y + size * 0.42, size * 0.055, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawPumpkin(ctx, x, y, size) {
+    ctx.fillStyle = "#7CB342";
+    ctx.fillRect(x - size * 0.05, y - size * 0.65, size * 0.1, size * 0.22);
+    var grad = ctx.createLinearGradient(x - size * 0.55, y, x + size * 0.55, y);
+    grad.addColorStop(0, "#FB8C00");
+    grad.addColorStop(0.5, "#FFA726");
+    grad.addColorStop(1, "#FB8C00");
+    ctx.fillStyle = grad;
+    ctx.strokeStyle = "rgba(194, 100, 0, 0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(x, y, size * 0.6, size * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    [-0.35, 0, 0.35].forEach(function (off) {
+      ctx.moveTo(x + off * size, y - size * 0.5);
+      ctx.lineTo(x + off * size, y + size * 0.5);
+    });
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x, y, size * 0.6, size * 0.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  function drawTree(ctx, x, y, size) {
+    ctx.fillStyle = "#8D6E63";
+    ctx.fillRect(x - size * 0.08, y + size * 0.35, size * 0.16, size * 0.2);
+    var grad = ctx.createLinearGradient(x, y - size * 0.6, x, y + size * 0.4);
+    grad.addColorStop(0, "#81C784");
+    grad.addColorStop(1, "#2E7D32");
+    ctx.fillStyle = grad;
+    [0.35, 0.1, -0.2].forEach(function (topOffset, i) {
+      var w = size * (0.65 - i * 0.12);
+      var tY = y + topOffset * size;
+      ctx.beginPath();
+      ctx.moveTo(x, tY - size * 0.32);
+      ctx.lineTo(x - w, tY + size * 0.18);
+      ctx.lineTo(x + w, tY + size * 0.18);
+      ctx.closePath();
+      ctx.fill();
+    });
+    ctx.fillStyle = "#FFD54F";
+    drawSparkle(ctx, x, y - size * 0.68, size * 0.16);
   }
 
   var DRAWERS = {
@@ -168,6 +312,11 @@
     heart: drawHeart,
     sparkle: drawSparkle,
     bow: drawBow,
+    cloud: drawCloud,
+    sun: drawSun,
+    snowman: drawSnowman,
+    pumpkin: drawPumpkin,
+    tree: drawTree,
   };
 
   global.PB_StickerDrawers = DRAWERS;
@@ -191,17 +340,23 @@
   };
 
   /**
-   * Shared draw routine for review-step placed stickers (emoji/text),
-   * used by both the live composite preview/export and the GIF exporter
-   * so the two paths can never drift out of sync.
+   * Shared draw routine for review-step placed stickers — either a
+   * custom-drawn icon (via PB_StickerDrawers) or plain text — used by both
+   * the live composite preview/export and the GIF exporter so the two
+   * paths can never drift out of sync.
    */
   global.PB_drawPlacedStickers = function (ctx, stickers, selectedStickerId) {
     if (!stickers || !stickers.length) return;
     stickers.forEach(function (sticker) {
-      ctx.font = sticker.size + "px sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(sticker.content, sticker.x, sticker.y);
+      if (sticker.type === "icon" && DRAWERS[sticker.value]) {
+        DRAWERS[sticker.value](ctx, sticker.x, sticker.y, sticker.size * 0.45);
+      } else {
+        ctx.font = "bold " + sticker.size + "px 'Quicksand', sans-serif";
+        ctx.fillStyle = "#e91e8c";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(sticker.value, sticker.x, sticker.y);
+      }
       if (selectedStickerId && sticker.id === selectedStickerId) {
         ctx.save();
         ctx.strokeStyle = "rgba(233, 30, 140, 0.85)";

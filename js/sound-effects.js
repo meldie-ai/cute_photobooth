@@ -38,36 +38,26 @@
       var ctx = getAudioContext();
       var now = ctx.currentTime;
 
-      var noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
-      var noiseData = noiseBuffer.getChannelData(0);
-      for (var i = 0; i < noiseData.length; i++) {
-        noiseData[i] = Math.random() * 2 - 1;
-      }
-      var noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = noiseBuffer;
-      var noiseGain = ctx.createGain();
-      noiseGain.gain.setValueAtTime(0.3, now);
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
-      var noiseFilter = ctx.createBiquadFilter();
-      noiseFilter.type = "highpass";
-      noiseFilter.frequency.value = 2000;
-      noiseSource.connect(noiseFilter);
-      noiseFilter.connect(noiseGain);
-      noiseGain.connect(ctx.destination);
-      noiseSource.start(now);
-      noiseSource.stop(now + 0.03);
-
-      var oscillator = ctx.createOscillator();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(150, now + 0.03);
-      oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.09);
-      var thumpGain = ctx.createGain();
-      thumpGain.gain.setValueAtTime(0.4, now + 0.03);
-      thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
-      oscillator.connect(thumpGain);
-      thumpGain.connect(ctx.destination);
-      oscillator.start(now + 0.03);
-      oscillator.stop(now + 0.09);
+      // A soft two-note "boop-beep" instead of a harsh camera-shutter
+      // click — gentler on the ears, still reads clearly as a capture cue.
+      var notes = [
+        { freq: 880, start: 0, dur: 0.07 },
+        { freq: 1320, start: 0.06, dur: 0.1 },
+      ];
+      notes.forEach(function (n) {
+        var osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = n.freq;
+        var gain = ctx.createGain();
+        var startTime = now + n.start;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.22, startTime + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + n.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + n.dur + 0.02);
+      });
     },
 
     playExportChime: function () {
